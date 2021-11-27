@@ -3,9 +3,12 @@ import {
   Button,
   Grid,
   InputLabel,
+  LinearProgress,
   MenuItem,
+  Modal,
   Select,
   TextField,
+  Typography,
 } from "@material-ui/core";
 import Link from "next/link";
 import * as React from "react";
@@ -19,6 +22,7 @@ import { categoryService } from "../src/services/categoryService";
 import { Category } from "../src/types/globalTypes";
 import router from "next/router";
 import Question from "../src/components/Question";
+import { TextareaAutosize } from "@mui/material";
 
 const GameStyled = styled.div`
   .link {
@@ -29,12 +33,21 @@ const GameStyled = styled.div`
     display: flex;
     align-items: center;
   }
+
+  .progress-bar {
+    margin: 20px 0;
+  }
 `;
 
 const Game = (props) => {
   const { isLogged, jwtToken } = useAppContext();
   const [category, setCategory] = useState("");
+  const [currentQuestion, setCurrentQuestion] = useState(0);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [startQuizz, setStartQuizz] = useState(false);
+  const [score, setScore] = useState(0);
+  const [over, setOver] = useState(false);
+
   const [questions, setQuestions] = useState([
     {
       createdAt: "2021-11-26T12:51:52.838Z",
@@ -48,8 +61,19 @@ const Game = (props) => {
       _id: "61a0f080c57df0cf7a2ee817",
       __v: 0,
     },
+    {
+      createdAt: "2021-11-26T12:51:52.838Z",
+      incorrect_answers: ["False"],
+      correct_answer: "True",
+      type: "boolean",
+      question:
+        "In the &quot;Shrek&quot; film franchise, Donkey is played by Eddie Murphy.",
+      category: "Entertainment: Cartoon & Animations",
+      difficulty: "easy",
+      _id: "61a0f0c9c57df0cf7a2ee835",
+      __v: 0,
+    },
   ]);
-  const [start, setStart] = useState(false);
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
@@ -61,13 +85,33 @@ const Game = (props) => {
       )
     );
   };
+
+  const correctAnswer = () => {
+    setScore(score + 1);
+  };
+
   const handleChange = (e) => {
     setCategory(e.target.value);
   };
 
+  const endQuizz = () => {
+    setOver(true);
+  };
+
+  const nextQuestion = () => {
+    if (currentQuestion == questions.length - 1) {
+      endQuizz();
+      return;
+    }
+
+    console.log(currentQuestion, questions.length);
+
+    setCurrentQuestion(currentQuestion + 1);
+  };
+
   useEffect(() => {
     if (questions.length > 0) {
-      setStart(true);
+      setStartQuizz(true);
     }
   }, [questions]);
 
@@ -79,7 +123,7 @@ const Game = (props) => {
 
   return (
     <GameStyled>
-      {!start && <h2>{"Commencer une partie"}</h2>}
+      {!startQuizz && <h2>{"Commencer une partie"}</h2>}
       {false ? (
         <Box>
           <Grid container direction={"row"} spacing={4}>
@@ -96,8 +140,20 @@ const Game = (props) => {
             </Grid>
           </Grid>
         </Box>
-      ) : start ? (
-        <Question question={questions[0]}></Question>
+      ) : startQuizz ? (
+        <>
+          <h2>{`Question ${currentQuestion + 1} / ${questions.length}`}</h2>
+          <LinearProgress
+            className="progress-bar"
+            variant="determinate"
+            value={(currentQuestion + 1 / questions.length) * 100}
+          />
+          <Question
+            handleNextQuestion={nextQuestion}
+            handleCorrectanswer={correctAnswer}
+            question={questions[currentQuestion]}
+          ></Question>
+        </>
       ) : (
         <form onSubmit={handleSubmit}>
           <Grid container direction={"column"} spacing={4}>
@@ -142,6 +198,33 @@ const Game = (props) => {
           </Grid>
         </form>
       )}
+      <Modal
+        open={over}
+        aria-labelledby="modal-modal-title"
+        aria-describedby="modal-modal-description"
+      >
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            width: 400,
+            bgcolor: "background.paper",
+            border: "2px solid #000",
+            boxShadow: 24,
+            p: 4,
+          }}
+        >
+          <h1>Votre Score : {score}</h1>
+          <Button
+            onClick={() => {
+              router.reload();
+            }}
+          >
+            Nouvelle partie
+          </Button>
+        </Box>
+      </Modal>
     </GameStyled>
   );
 };

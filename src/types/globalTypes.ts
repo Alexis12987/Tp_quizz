@@ -30,7 +30,7 @@ export interface Category {
 }
 
 export interface QuestionType {
-  createdAt: Date;
+  createdAt: string;
   incorrect_answers: string[];
   correct_answer: string;
   type: string;
